@@ -1,0 +1,24 @@
+# Node
+node_modules/
+npm-debug.log*
+pnpm-lock.yaml
+yarn.lock
+
+# Build outputs
+client/dist/
+server/dist/
+
+# Secrets / env
+*.env
+*.env.*
+server/.env
+server/sa.json
+*.pem
+*.p8
+*.key
+*.jks
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/

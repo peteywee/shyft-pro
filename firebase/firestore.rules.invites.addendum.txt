@@ -1,0 +1,19 @@
+// firebase/firestore.rules (invites addendum)
+// Merge into your ruleset. Staff remains read-only; invites are admin/manager only.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function me() { return get(/databases/$(db)/documents/users/$(request.auth.uid)).data; }
+    function member(orgId) { return get(/databases/$(db)/documents/orgs/$(orgId)/members/$(request.auth.uid)).data; }
+    function isActiveMember(orgId) { return isSignedIn() && member(orgId).status == 'active'; }
+    function isAdminOrManager(orgId) {
+      let r = member(orgId).role;
+      return isActiveMember(orgId) && (r == 'admin' || r == 'manager');
+    }
+
+    match /orgs/{orgId}/invites/{inviteId} {
+      allow read, write: if isAdminOrManager(orgId);
+    }
+  }
+}
