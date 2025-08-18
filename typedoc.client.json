@@ -1,0 +1,7 @@
+{
+  "entryPoints": ["client/src"],
+  "tsconfig": "client/tsconfig.json",
+  "out": "site/typedoc/client",
+  "excludePrivate": true,
+  "excludeExternals": false
+}

@@ -1,0 +1,34 @@
+{
+  "name": "ryne",
+  "version": "1.0.0",
+  "description": "This repo contains the Authentication & Onboarding slice: - Firebase Auth (email/password) - Org creation (creator -> admin/active) - Invites with single-use code (hash stored) - Invite acceptance with email match - `/api/me` identity + org/role/status - Optional static hosting of built client from Express when `SERVE_STATIC=true`",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs:typedoc": "bash -c 'mkdir -p site/typedoc && (cd client && npx typedoc --tsconfig tsconfig.json --entryPoints src --entryPointStrategy expand --skipErrorChecking --out ../site/typedoc/client) && (cd server && npx typedoc --tsconfig tsconfig.json --entryPoints src --entryPointStrategy expand --skipErrorChecking --out ../site/typedoc/server)'",
+    "docs:openapi": "redocly build-docs openapi.yaml -o site/api",
+    "docs:site": "bash scripts/make-docs-index.sh",
+    "docs": "rimraf site && npm run docs:typedoc && npm run docs:openapi && npm run docs:site"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/top-shelf-service/ryne.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/top-shelf-service/ryne/issues"
+  },
+  "homepage": "https://github.com/top-shelf-service/ryne#readme",
+  "private": "true",
+  "devDependencies": {
+    "@redocly/cli": "^2.0.5",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.4",
+    "conventional-changelog-conventionalcommits": "^9.1.0",
+    "rimraf": "^6.0.1",
+    "semantic-release": "^24.2.7",
+    "typedoc": "^0.28.10"
+  }
+}

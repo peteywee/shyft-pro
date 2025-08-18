@@ -22,3 +22,9 @@ server/sa.json
 .DS_Store
 .idea/
 .vscode/
+
+site/
+client/dist/
+server/dist/
+server/.env
+server/sa.json

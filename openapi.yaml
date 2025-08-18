@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: Shyft API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+  /api/me:
+    get:
+      summary: Identity of the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Returns uid, orgId, role, status
+  /api/orgs:
+    post:
+      summary: Create organization (caller becomes admin/active)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Org created
+  /api/orgs/{orgId}/invites:
+    post:
+      summary: Create invite (admin/manager)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Invite created
+  /api/orgs/{orgId}/invites/accept:
+    post:
+      summary: Accept invite (email must match)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Joined
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

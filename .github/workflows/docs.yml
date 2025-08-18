@@ -1,0 +1,66 @@
+name: CI + Docs
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # --- Client build sanity ---
+      - name: Install client deps
+        working-directory: client
+        run: npm ci
+
+      - name: Build client
+        working-directory: client
+        run: npm run build
+
+      # --- Server typecheck ---
+      - name: Install server deps
+        working-directory: server
+        run: npm ci
+
+      - name: Type-check server
+        working-directory: server
+        run: npx tsc --noEmit
+
+      # --- Docs generation ---
+      - name: Install root dev deps
+        run: npm ci
+
+      - name: Build docs (Typedoc + Redoc)
+        run: npm run docs
+
+      # --- Publish docs to GitHub Pages (only on push to main) ---
+      - name: Setup Pages
+        if: github.event_name == 'push'
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push'
+        id: deployment
+        uses: actions/deploy-pages@v4
+
