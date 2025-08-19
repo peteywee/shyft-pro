@@ -1,0 +1,12 @@
+{
+  "name": "time-mvp",
+  "private": true,
+  "version": "0.0.1",
+  "workspaces": ["apps/*","packages/*"],
+  "scripts": {
+    "dev:api": "npm --workspace=@time-mvp/api run dev",
+    "dev:web": "npm --workspace=@time-mvp/web run dev",
+    "dev": "npm run dev:api & npm run dev:web",
+    "build": "npm --workspace=@time-mvp/api run build && npm --workspace=@time-mvp/web run build"
+  }
+}

@@ -1,6 +1,6 @@
 // server/src/auth.ts
 import { Request, Response, NextFunction } from 'express';
-import { auth } from './firebase';
+import { auth } from './firebase.js';
 
 export async function verifyFirebaseToken(req: Request & { uid?: string }, res: Response, next: NextFunction) {
   const h = req.header('authorization') || req.header('Authorization') || '';

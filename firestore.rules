@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function user() { return get(/databases/$(db)/documents/users/$(request.auth.uid)).data; }
+    function inOrg(orgId) { return user().orgId == orgId; }
+    function isRole(r) { return user().role == r; }
+
+    match /users/{uid} {
+      allow read, write: if isSignedIn() && uid == request.auth.uid;
+    }
+
+    // Org-scoped read/write (server performs privileged writes via Admin SDK)
+    match /orgs/{orgId}/{coll=**}/{doc} {
+      allow read: if isSignedIn() && inOrg(orgId);
+      allow write: if isSignedIn() && inOrg(orgId) && (isRole('admin') || isRole('manager'));
+    }
+
+    // Timesheets: staff can write their own sheet
+    match /orgs/{orgId}/timesheets/{sheetId} {
+      allow read: if isSignedIn() && inOrg(orgId);
+      allow write: if isSignedIn() && inOrg(orgId) &&
+        (isRole('admin') || isRole('manager') || sheetId.startsWith(request.auth.uid + "_"));
+    }
+
+    // Audit: server-only
+    match /orgs/{orgId}/audit/{id} {
+      allow read: if isSignedIn() && inOrg(orgId);
+      allow write: if false;
+    }
+  }
+}

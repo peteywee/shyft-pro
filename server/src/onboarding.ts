@@ -1,7 +1,7 @@
 // server/src/onboarding.ts
 import express from 'express'
 import crypto from 'crypto'
-import { db } from './firebase'
+import { db } from './firebase.js'
 
 export function onboardingRouter(verifyFirebaseToken: any) {
   const r = express.Router()

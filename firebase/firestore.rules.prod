@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function userDoc() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function member(orgId) { return get(/databases/$(database)/documents/orgs/$(orgId)/members/$(request.auth.uid)).data; }
+    function isActiveMember(orgId) { return isSignedIn() && member(orgId).status == 'active'; }
+    function isAdminOrManager(orgId) {
+      let r = member(orgId).role;
+      return isActiveMember(orgId) && (r == 'admin' || r == 'manager');
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && uid == request.auth.uid;
+      allow write: if isSignedIn() && uid == request.auth.uid;
+    }
+
+    match /orgs/{orgId} {
+      allow read: if isActiveMember(orgId);
+      allow write: if isAdminOrManager(orgId);
+
+      match /members/{uid} {
+        allow read: if isActiveMember(orgId);
+        allow write: if isAdminOrManager(orgId);
+      }
+
+      match /invites/{inviteId} {
+        allow read, write: if isAdminOrManager(orgId);
+      }
+    }
+  }
+}

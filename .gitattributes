@@ -1,0 +1,4 @@
+server/sa.json export-ignore
+server/.env export-ignore
+client/dist/ export-ignore
+site/ export-ignore

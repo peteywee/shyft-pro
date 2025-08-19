@@ -28,3 +28,14 @@ client/dist/
 server/dist/
 server/.env
 server/sa.json
+# builds
+client/dist/
+server/dist/
+site/
+
+# secrets / env
+server/.env
+server/sa.json
+*.env
+*.env.* 
+*.pem *.p8 *.key *.jks
