@@ -58,12 +58,13 @@ jobs:
         if: github.event_name == 'push'
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
-        if: github.event_name == 'push'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
+  
+  if: github.event_name == 'push' && github.job == 'build'
+  uses: actions/upload-pages-artifact@v3
+  with:
+    path: site- name: Upload artifact
+  
+      
       - name: Deploy to GitHub Pages
         if: github.event_name == 'push'
         id: deployment
