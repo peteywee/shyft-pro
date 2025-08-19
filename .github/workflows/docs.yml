@@ -37,6 +37,11 @@ jobs:
         working-directory: server
         run: npm ci
 
+      # FIX: Install missing type definitions for the 'cors' package
+      - name: Install server type definitions
+        working-directory: server
+        run: npm install @types/cors
+
       - name: Type-check server
         working-directory: server
         run: npx tsc --noEmit
@@ -63,4 +68,3 @@ jobs:
         if: github.event_name == 'push'
         id: deployment
         uses: actions/deploy-pages@v4
-
