@@ -1,6 +1,54 @@
-# project-local overrides
+# dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+.vercel/
+
+# builds & caches
+dist/
+build/
+coverage/
+*.log
+
+# env files
 .env
 .env.*
-*.pem
-*.key
-secrets.*
+!.env.example
+# dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+.vercel/
+
+# builds & caches
+dist/
+build/
+coverage/
+*.log
+
+# env files
+.env
+.env.*
+!.env.example
+# dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+.vercel/
+
+# builds & caches
+dist/
+build/
+coverage/
+*.log
+
+# env files
+.env
+.env.*
+!.env.example
