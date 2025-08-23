@@ -1,56 +1,6 @@
-# --- Node / Next ---
-node_modules/
-.npm/
-.next/
-out/
-dist/
-coverage/
-npm-debug.log*
-yarn-error.log*
-
-# --- Env & secrets (DO NOT COMMIT) ---
+# project-local overrides
 .env
 .env.*
-!.env.example
 *.pem
-*.p12
-*.pfx
-*.keystore
-*.crt
 *.key
-*.ks
-*.jks
-*serviceAccount*.json
-*service-account*.json
-new-key.json
-sa.json
-
-# Firebase / GCP local state
-.firebase/
-.firebaserc.local
-*.runtimeconfig.json
-
-# Tool configs that may contain tokens
-.npmrc
-.yarnrc
-.pnpmrc
-.wrangler/
-.netrc
-
-# IDE / OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# Archives & large dump files
-*.zip
-shyft_fb_8-23.zip
-
-# Optional: GitHub Codespaces, editors
-*.swp
-*.swo
-
-# Firebase logs
-firebase-debug.log
-firestore-debug.log
+secrets.*
