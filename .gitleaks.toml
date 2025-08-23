@@ -1,0 +1,38 @@
+title = "Shyft gitleaks config"
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API key"
+regex = '''(?i)(api[_-]?key|secret|token|password|passwd|authorization)\s*[:=]\s*['"]?[A-Za-z0-9_\-]{16,}['"]?'''
+tags = ["key","generic"]
+
+[[rules]]
+id = "bearer-token"
+description = "Bearer token"
+regex = '''(?i)authorization\s*:\s*bearer\s+[A-Za-z0-9\-\._]+'''
+tags = ["token"]
+
+[[rules]]
+id = "google-api-key"
+description = "Google API key"
+regex = '''AIza[0-9A-Za-z\-_]{35}'''
+tags = ["google","apikey"]
+
+[[rules]]
+id = "openai-key"
+description = "OpenAI key"
+regex = '''sk-[A-Za-z0-9]{20,}'''
+tags = ["openai","apikey"]
+
+[[rules]]
+id = "firebase-sa-json"
+description = "Firebase service account JSON"
+regex = '''"type"\s*:\s*"service_account"'''
+tags = ["gcp","firebase","sa"]
+
+[allowlist]
+description = "Allow docs and tests to contain patterns without failing"
+paths = [
+  '''^docs/''',
+  '''^tests?/'''
+]

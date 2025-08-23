@@ -52,3 +52,33 @@ coverage/
 .env
 .env.*
 !.env.example
+# --- Dependencies / builds ---
+node_modules/
+dist/
+build/
+coverage/
+*.log
+
+# --- Next.js ---
+.next/
+out/
+.vercel/
+
+# --- Python venv you have in ./main ---
+main/
+
+# --- Project-specific generated artifacts ---
+public/sw.js
+public/workbox-*.js
+
+# --- Secrets & env ---
+.env
+.env.*
+!.env.example
+secrets/
+type:REDACTED
+new-key.json
+REDACTED_*
+
+# keep example templates tracked under secrets if needed
+!secrets/**/.env.example
