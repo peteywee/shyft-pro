@@ -1,0 +1,19 @@
+// src/app/(app)/schedule-assistant/actions.ts
+'use client';
+
+import { auth } from '@/lib/firebase';
+
+export async function generateSchedule(input: any) {
+  const u = auth.currentUser;
+  if (!u) throw new Error('Not authenticated');
+  const token = await u.getIdToken();
+
+  const res = await fetch('/api/schedule', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify(input),
+  });
+
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}

@@ -1,0 +1,16 @@
+name = "ryne-api"
+main = "src/index.js"
+workers_dev = true
+compatibility_date = "2025-08-21"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+  [observability.logs]
+  enabled = true
+  head_sampling_rate = 1
+  invocation_logs = true
+
+[vars]
+ENV = "production"

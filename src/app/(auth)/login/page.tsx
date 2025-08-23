@@ -1,166 +1,80 @@
+// src/app/(auth)/login/page.tsx
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Logo } from '@/components/logo';
-import { useToast } from '@/hooks/use-toast';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, User } from 'firebase/auth';
-
-const GoogleIcon = (props: React.ComponentProps<'svg'>) => (
-    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
-        <title>Google</title>
-        <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.98-4.66 1.98-3.57 0-6.45-2.84-6.45-6.33s2.88-6.33 6.45-6.33c1.93 0 3.38.79 4.34 1.74l2.25-2.25C18.63 3.32 15.9 2.25 12.48 2.25c-5.47 0-9.9 4.43-9.9 9.9s4.43 9.9 9.9 9.9c3.09 0 5.46-1.04 7.25-2.82 1.86-1.74 2.33-4.43 2.33-6.59 0-.6-.05-1.15-.14-1.68h-9.46Z" />
-    </svg>
-);
-
 
 export default function LoginPage() {
   const router = useRouter();
-  const { toast } = useToast();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string|null>(null);
 
   React.useEffect(() => {
-    const checkRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result && result.user) {
-          toast({
-            title: 'Login Successful',
-            description: `Welcome, ${result.user.displayName}! Redirecting...`,
-          });
-          router.push('/dashboard');
-        } else {
-          setLoading(false);
-        }
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Google Sign-In Failed',
-          description: error.message,
-        });
-        setLoading(false);
+    // Handle Google redirect results if any
+    getRedirectResult(auth).then((res) => {
+      if (res?.user) {
+        router.push('/dashboard');
       }
-    };
-    checkRedirectResult();
-  }, [router, toast]);
+    }).catch((err) => setError(err?.message || 'Google sign-in failed.'));
+  }, [router]);
 
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    setLoading(true);
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!email || !password) {
+      setError('Email and password required.');
+      return;
+    }
     try {
-      await signInWithRedirect(auth, provider);
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Google Sign-In Failed',
-        description: error.message,
-      });
+      setLoading(true);
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err?.message || 'Login failed.');
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: 'Please enter both email and password.',
-      });
-      return;
-    }
-    // This is a mock authentication. In a real app, you'd call Firebase Auth here.
-    console.log('Logging in with:', { email, password });
-    toast({
-      title: 'Login Successful',
-      description: 'Redirecting to your dashboard...',
-    });
-    router.push('/dashboard');
+  const onGoogle = () => {
+    const provider = new GoogleAuthProvider();
+    signInWithRedirect(auth, provider);
   };
 
-  const handleForgotPassword = () => {
-    if (!email) {
-      toast({
-        variant: 'destructive',
-        title: 'Email Required',
-        description: 'Please enter your email address to reset your password.',
-      });
-      return;
+  const onForgot = async () => {
+    setError(null);
+    if (!email) { setError('Enter your email to reset password.'); return; }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert(`Password reset link sent to ${email}`);
+    } catch (err: any) {
+      setError(err?.message || 'Reset failed.');
     }
-    toast({
-      title: 'Password Reset',
-      description: `Password reset instructions have been sent to ${email}.`,
-    });
   };
-
-  if (loading) {
-    return (
-        <Card className="w-full max-w-md shadow-lg flex items-center justify-center h-96">
-            <p>Loading...</p>
-        </Card>
-    );
-  }
 
   return (
-    <Card className="w-full max-w-md shadow-lg">
-      <CardHeader className="space-y-1 text-center">
-        <div className="flex justify-center mb-4">
-          <Logo className="h-10 w-auto" />
+    <main className="max-w-md mx-auto p-6">
+      <h1 className="text-2xl font-semibold mb-4">Sign in</h1>
+      <form onSubmit={onSubmit} className="space-y-4">
+        {error && <p className="text-red-600 text-sm">{error}</p>}
+        <div>
+          <label className="block text-sm">Email</label>
+          <input type="email" className="w-full border p-2 rounded" value={email} onChange={e=>setEmail(e.target.value)} />
         </div>
-        <CardTitle className="text-2xl font-bold font-headline">Welcome to Shyft</CardTitle>
-        <CardDescription>Enter your credentials to access your account</CardDescription>
-      </CardHeader>
-      <CardContent>
-         <div className="space-y-4">
-             <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
-                <GoogleIcon className="mr-2 h-4 w-4" />
-                Sign in with Google
-            </Button>
-
-            <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                        Or continue with
-                    </span>
-                </div>
-            </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                   <span onClick={handleForgotPassword} className="ml-auto inline-block text-sm text-muted-foreground/50 cursor-pointer hover:underline">
-                    Forgot your password?
-                  </span>
-                </div>
-                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <Button type="submit" className="w-full bg-accent hover:bg-accent/90">
-                Login
-              </Button>
-            </form>
+        <div>
+          <label className="block text-sm">Password</label>
+          <input type="password" className="w-full border p-2 rounded" value={password} onChange={e=>setPassword(e.target.value)} />
         </div>
-        <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="underline">
-            Sign up
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+        <button disabled={loading} className="w-full bg-black text-white p-2 rounded">
+          {loading ? 'Signing in...' : 'Sign in'}
+        </button>
+      </form>
+      <button onClick={onGoogle} className="w-full mt-3 border p-2 rounded">Sign in with Google</button>
+      <button onClick={onForgot} className="w-full mt-3 text-sm underline">Forgot password?</button>
+    </main>
   );
 }

@@ -1,58 +1,37 @@
 {
-  "name": "nextn",
+  "name": "shyft",
   "version": "0.1.0",
   "private": true,
+  "description": "Shyft – Staff scheduling and onboarding PWA with Firebase + Cloudflare Worker backend",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
+    "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3000",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "firebase:emulators": "firebase emulators:start --only auth,firestore,storage",
+    "firebase:deploy": "firebase deploy --only hosting,firestore,auth,storage",
+    "deploy:worker": "cd cloudflare-worker && wrangler publish",
+    "scaffold": "bash ./scaffold.sh"
   },
   "dependencies": {
-    "@genkit-ai/googleai": "^1.14.1",
-    "@genkit-ai/next": "^1.14.1",
-    "@hookform/resolvers": "^4.1.3",
-    "@radix-ui/react-accordion": "^1.2.0",
-    "@radix-ui/react-avatar": "^1.1.3",
-    "@radix-ui/react-checkbox": "^1.1.4",
-    "@radix-ui/react-dialog": "^1.1.1",
-    "@radix-ui/react-dropdown-menu": "^2.1.6",
-    "@radix-ui/react-label": "^2.1.2",
-    "@radix-ui/react-popover": "^1.1.1",
-    "@radix-ui/react-radio-group": "^1.2.0",
-    "@radix-ui/react-slot": "^1.2.3",
-    "@radix-ui/react-toast": "^1.2.6",
-    "@radix-ui/react-tooltip": "^1.1.8",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^3.6.0",
-    "dotenv": "^16.5.0",
-    "firebase": "^11.10.0",
-    "genkit": "^1.14.1",
-    "lucide-react": "^0.475.0",
-    "next": "15.3.3",
+    "firebase": "^10.12.0",
+    "next": "14.2.5",
     "next-pwa": "^5.6.0",
-    "next-themes": "^0.2.1",
-    "patch-package": "^8.0.0",
-    "react": "^18.3.1",
-    "react-day-picker": "^8.10.1",
-    "react-dom": "^18.3.1",
-    "react-hook-form": "^7.54.2",
-    "tailwind-merge": "^3.0.1",
-    "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.24.2"
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "firebase-tools": "^14.14.0",
-    "genkit-cli": "^1.14.1",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
-  }
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.22",
+    "@types/react-dom": "^18.2.7",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.2.5",
+    "typescript": "^5.5.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT",
+  "author": "Top Shelf Service LLC"
 }

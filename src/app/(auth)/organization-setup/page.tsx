@@ -1,72 +1,85 @@
-
+// src/app/(auth)/organization-setup/page.tsx
 'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Building, UserPlus, ArrowRight } from 'lucide-react';
-import { Logo } from '@/components/logo';
+import { auth, db } from '@/lib/firebase';
+import { addDoc, collection, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 export default function OrganizationSetupPage() {
-    const router = useRouter();
+  const router = useRouter();
+  const [inviteCode, setInviteCode] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string|null>(null);
 
-    const handleCreate = () => {
-        // In a real app, this would navigate to a form to create an organization
-        // For now, we'll just go to the dashboard as an Admin
-        router.push('/dashboard?role=Admin');
-    }
+  const onCreateOrg = async () => {
+    setError(null);
+    const user = auth.currentUser;
+    if (!user) { setError('Not authenticated.'); return; }
 
-    const handleJoin = () => {
-        // This would navigate to a page to enter an invite code or search for an organization
-        // For now, we'll simulate joining and go to the dashboard as Staff
-        router.push('/dashboard?role=Staff');
+    try {
+      setLoading(true);
+      const orgRef = await addDoc(collection(db, 'organizations'), {
+        name: `${user.email?.split('@')[0]}'s Workspace`,
+        ownerUid: user.uid,
+        createdAt: Date.now(),
+      });
+
+      await updateDoc(doc(db, 'users', user.uid), {
+        role: 'Admin',
+        orgId: orgRef.id,
+      });
+
+      router.push('/onboarding');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to create organization.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const onJoinOrg = async () => {
+    setError(null);
+    const user = auth.currentUser;
+    if (!user) { setError('Not authenticated.'); return; }
+    if (!inviteCode) { setError('Invitation code required.'); return; }
+
+    try {
+      setLoading(true);
+      // Minimal client-side join logic (you can move this to Worker for more security)
+      const inviteSnap = await getDoc(doc(db, 'invites', inviteCode));
+      if (!inviteSnap.exists()) throw new Error('Invalid invite code.');
+
+      const { orgId, role = 'Staff', used = false } = inviteSnap.data() || {};
+      if (used) throw new Error('Invite already used.');
+
+      await updateDoc(doc(db, 'users', user.uid), { role, orgId });
+      await updateDoc(doc(db, 'invites', inviteCode), { used: true, usedBy: user.uid, usedAt: Date.now() });
+
+      router.push('/onboarding');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to join organization.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <Card className="w-full max-w-lg shadow-lg">
-      <CardHeader className="space-y-1 text-center">
-        <div className="flex justify-center mb-4">
-          <Logo className="h-10 w-auto" />
+    <main className="max-w-md mx-auto p-6">
+      <h1 className="text-2xl font-semibold mb-4">Organization Setup</h1>
+      {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
+      <div className="space-y-3">
+        <button disabled={loading} onClick={onCreateOrg} className="w-full bg-black text-white p-2 rounded">
+          {loading ? 'Working...' : 'Create a new organization (Admin)'}
+        </button>
+        <div className="border rounded p-3 space-y-2">
+          <label className="block text-sm">Invitation Code</label>
+          <input className="w-full border p-2 rounded" value={inviteCode} onChange={e=>setInviteCode(e.target.value)} />
+          <button disabled={loading} onClick={onJoinOrg} className="w-full border p-2 rounded">
+            Join existing organization (Staff)
+          </button>
         </div>
-        <CardTitle className="text-2xl font-bold font-headline">Get Started with Shyft</CardTitle>
-        <CardDescription>How would you like to set up your account?</CardDescription>
-      </CardHeader>
-      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-        
-        <div className="flex flex-col">
-            <Card 
-                className="flex-grow flex flex-col items-center justify-center text-center p-6 hover:border-primary hover:shadow-lg transition-all cursor-pointer"
-                onClick={handleCreate}
-            >
-                <Building className="h-12 w-12 mb-4 text-primary" />
-                <h3 className="text-lg font-semibold">Create an Organization</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Set up a new workspace for your team and manage schedules, payroll, and members.
-                </p>
-            </Card>
-            <Button onClick={handleCreate} className="mt-4 w-full">
-                Create <ArrowRight className="ml-2" />
-            </Button>
-        </div>
-
-        <div className="flex flex-col">
-            <Card 
-                className="flex-grow flex flex-col items-center justify-center text-center p-6 hover:border-primary hover:shadow-lg transition-all cursor-pointer"
-                onClick={handleJoin}
-            >
-                <UserPlus className="h-12 w-12 mb-4 text-primary" />
-                <h3 className="text-lg font-semibold">Join an Organization</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Accept an invitation to join an existing workspace and view your shifts.
-                </p>
-            </Card>
-            <Button onClick={handleJoin} className="mt-4 w-full">
-                Join <ArrowRight className="ml-2" />
-            </Button>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </main>
   );
 }
-

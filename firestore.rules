@@ -1,0 +1,44 @@
+// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can read/write their own profile (but cannot elevate role/orgId)
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId
+        && !('role' in request.resource.data.diff(resource.data).changedKeys())
+        && !('orgId' in request.resource.data.diff(resource.data).changedKeys());
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Admins (custom claim) can read any profile
+      allow read: if request.auth.token.role == 'Admin';
+    }
+
+    // Organizations readable by members; write by admins
+    match /organizations/{orgId} {
+      allow read: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId == orgId;
+
+      allow write: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId == orgId
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    // Invites: only admins can create; anyone with code can read minimal fields to join
+    match /invites/{code} {
+      allow read: if true; // or restrict via Cloud Function / Worker instead
+      allow create, update, delete: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    // Example: schedules scoped by org and admin write
+    match /organizations/{orgId}/schedules/{scheduleId} {
+      allow read: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId == orgId;
+
+      allow write: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId == orgId
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+  }
+}

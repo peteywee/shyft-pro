@@ -1,0 +1,16 @@
+# cloudflare-worker/wrangler.toml
+name = "shyft-backend-worker"
+main = "src/index.ts"
+compatibility_date = "2025-08-23"
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+
+# If using a custom domain route, uncomment and configure:
+# routes = [
+#   { pattern = "yourdomain.com/api/*", zone_name = "yourdomain.com" }
+# ]
+
+[vars]
+FIREBASE_PROJECT_ID = "YOUR_FIREBASE_PROJECT_ID"
+
+# Set secret at deploy time:
+# wrangler secret put OPENAI_API_KEY

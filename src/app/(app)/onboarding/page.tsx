@@ -1,246 +1,133 @@
-
-
+// src/app/(app)/onboarding/page.tsx
 'use client';
 
 import * as React from 'react';
-import { useForm, FormProvider } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronLeft, ChevronRight, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
-const steps = [
-  { id: '01', name: 'Personal Information', fields: ['fullName', 'address'] },
-  { id: '02', name: 'Federal Withholding (W-4)', fields: ['filingStatus', 'dependentsAmount', 'otherIncome', 'otherDeductions', 'extraWithholding', 'isMultipleJobsChecked'] },
-  { id: '03', name: 'State Withholding', fields: ['state', 'stateSpecificField'] },
-  { id: '04', name: 'I-9 Verification', fields: ['documentType', 'documentNumber'] },
-  { id: '05', name: 'Review & Submit' },
-];
-
-const OnboardingSchema = z.object({
-  fullName: z.string().min(1, 'Full name is required.'),
-  address: z.string().min(1, 'Address is required.'),
-  filingStatus: z.enum(['Single or Married filing separately', 'Married filing jointly', 'Head of Household']),
-  isMultipleJobsChecked: z.boolean().default(false),
-  dependentsAmount: z.coerce.number().min(0).default(0),
-  otherIncome: z.coerce.number().min(0).default(0),
-  otherDeductions: z.coerce.number().min(0).default(0),
-  extraWithholding: z.coerce.number().min(0).default(0),
-  state: z.string().min(2, 'State is required.').default('TX'),
-  stateSpecificField: z.string().optional(),
-  documentType: z.enum(['Passport', 'Driver\'s License', 'Social Security Card']),
-  documentNumber: z.string().min(1, 'Document number is required.'),
-});
-
+type OnboardingData = {
+  fullName: string;
+  address: string;
+  filingStatus: 'Single'|'Married'|'HeadOfHousehold';
+  dependentsAmount: number;
+  otherIncome: number;
+  otherDeductions: number;
+  extraWithholding: number;
+  isMultipleJobsChecked: boolean;
+  documentType: 'Passport'|'DriverLicense'|'StateID';
+  documentNumber: string;
+};
 
 export default function OnboardingPage() {
-  const [currentStep, setCurrentStep] = React.useState(0);
   const router = useRouter();
-  
-  const methods = useForm<z.infer<typeof OnboardingSchema>>({
-    resolver: zodResolver(OnboardingSchema),
-    defaultValues: {
-      fullName: '',
-      address: '',
-      filingStatus: 'Single or Married filing separately',
-      isMultipleJobsChecked: false,
-      dependentsAmount: 0,
-      otherIncome: 0,
-      otherDeductions: 0,
-      extraWithholding: 0,
-      state: 'TX',
-      documentType: 'Passport',
-      documentNumber: '',
-    },
+  const [data, setData] = React.useState<OnboardingData>({
+    fullName: '',
+    address: '',
+    filingStatus: 'Single',
+    dependentsAmount: 0,
+    otherIncome: 0,
+    otherDeductions: 0,
+    extraWithholding: 0,
+    isMultipleJobsChecked: false,
+    documentType: 'Passport',
+    documentNumber: '',
   });
+  const [error, setError] = React.useState<string|null>(null);
+  const [saving, setSaving] = React.useState(false);
 
-  type FieldName = keyof z.infer<typeof OnboardingSchema>;
+  React.useEffect(() => {
+    // If already complete, skip
+    (async () => {
+      const u = auth.currentUser;
+      if (!u) return;
+      const snap = await getDoc(doc(db, 'users', u.uid));
+      if (snap.exists() && snap.data().onboardingComplete) {
+        router.replace('/dashboard');
+      }
+    })();
+  }, [router]);
 
-  const next = async () => {
-    const fields = steps[currentStep].fields;
-    const output = await methods.trigger(fields as FieldName[], { shouldFocus: true });
-    
-    if (!output) return;
-
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(step => step + 1);
-    } else {
-        // Final step submit
-        await methods.handleSubmit(onSubmit)();
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const u = auth.currentUser;
+    if (!u) { setError('Not authenticated.'); return; }
+    try {
+      setSaving(true);
+      await updateDoc(doc(db, 'users', u.uid), {
+        ...data,
+        onboardingComplete: true,
+        onboardingCompletedAt: Date.now(),
+      });
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to save onboarding.');
+    } finally {
+      setSaving(false);
     }
   };
-
-  const prev = () => {
-    if (currentStep > 0) {
-      setCurrentStep(step => step - 1);
-    }
-  };
-  
-  const onSubmit = (data: z.infer<typeof OnboardingSchema>) => {
-    console.log('Onboarding data:', data);
-    // In a real app, this data would be saved to a secure backend.
-    // We would also update the user's onboardingStatus to 'complete'.
-    alert('Employee onboarded successfully!');
-    // Redirect to the staff dashboard, as they have now completed the mandatory flow.
-    router.push('/dashboard?role=Staff');
-  }
 
   return (
-    <>
-      <PageHeader title="New Employee Onboarding" description="Complete the following steps to set up your employee profile and payroll information." />
-      <Card>
-        <CardHeader>
-           <div className="flex justify-between items-center">
-             <div>
-                <CardTitle>Onboarding Wizard</CardTitle>
-                <CardDescription>Step {currentStep + 1} of {steps.length}: {steps[currentStep].name}</CardDescription>
-             </div>
-             <div className="text-sm text-muted-foreground">
-                Progress: {((currentStep / (steps.length -1)) * 100).toFixed(0)}%
-             </div>
-           </div>
-        </CardHeader>
-        <CardContent>
-          <FormProvider {...methods}>
-            <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-8">
-              {currentStep === 0 && (
-                <div className="space-y-4 max-w-lg">
-                  <FormField control={methods.control} name="fullName" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Legal Name</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={methods.control} name="address" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Address</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-              )}
-              
-              {currentStep === 1 && (
-                  <div className="space-y-6 max-w-lg">
-                    <FormField control={methods.control} name="filingStatus" render={({ field }) => (
-                        <FormItem className="space-y-3">
-                            <FormLabel>Federal Filing Status</FormLabel>
-                            <FormControl>
-                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl><RadioGroupItem value="Single or Married filing separately" /></FormControl>
-                                        <FormLabel className="font-normal">Single or Married filing separately</FormLabel>
-                                    </FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl><RadioGroupItem value="Married filing jointly" /></FormControl>
-                                        <FormLabel className="font-normal">Married filing jointly</FormLabel>
-                                    </FormItem>
-                                     <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl><RadioGroupItem value="Head of Household" /></FormControl>
-                                        <FormLabel className="font-normal">Head of Household</FormLabel>
-                                    </FormItem>
-                                </RadioGroup>
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={methods.control} name="dependentsAmount" render={({ field }) => (<FormItem><FormLabel>Dependents (Step 3)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={methods.control} name="otherIncome" render={({ field }) => (<FormItem><FormLabel>Other Income (4a)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={methods.control} name="otherDeductions" render={({ field }) => (<FormItem><FormLabel>Deductions (4b)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={methods.control} name="extraWithholding" render={({ field }) => (<FormItem><FormLabel>Extra Withholding (4c)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                     <FormField control={methods.control} name="isMultipleJobsChecked" render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            <div className="space-y-1 leading-none">
-                                <FormLabel>Multiple Jobs or Spouse Works?</FormLabel>
-                                <FormDescription>Check this if you hold more than one job at a time or are married filing jointly and your spouse also works.</FormDescription>
-                            </div>
-                        </FormItem>
-                    )} />
-                  </div>
-              )}
+    <main className="max-w-2xl mx-auto p-6">
+      <h1 className="text-2xl font-semibold mb-4">Complete your onboarding</h1>
+      {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
+      <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm">Full Name</label>
+          <input className="w-full border p-2 rounded" value={data.fullName} onChange={e=>setData({...data, fullName: e.target.value})}/>
+        </div>
+        <div>
+          <label className="block text-sm">Address</label>
+          <input className="w-full border p-2 rounded" value={data.address} onChange={e=>setData({...data, address: e.target.value})}/>
+        </div>
+        <div>
+          <label className="block text-sm">Filing Status</label>
+          <select className="w-full border p-2 rounded" value={data.filingStatus} onChange={e=>setData({...data, filingStatus: e.target.value as any})}>
+            <option>Single</option>
+            <option>Married</option>
+            <option>HeadOfHousehold</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm">Dependents Amount</label>
+          <input type="number" className="w-full border p-2 rounded" value={data.dependentsAmount} onChange={e=>setData({...data, dependentsAmount: Number(e.target.value)})}/>
+        </div>
+        <div>
+          <label className="block text-sm">Other Income</label>
+          <input type="number" className="w-full border p-2 rounded" value={data.otherIncome} onChange={e=>setData({...data, otherIncome: Number(e.target.value)})}/>
+        </div>
+        <div>
+          <label className="block text-sm">Other Deductions</label>
+          <input type="number" className="w-full border p-2 rounded" value={data.otherDeductions} onChange={e=>setData({...data, otherDeductions: Number(e.target.value)})}/>
+        </div>
+        <div>
+          <label className="block text-sm">Extra Withholding</label>
+          <input type="number" className="w-full border p-2 rounded" value={data.extraWithholding} onChange={e=>setData({...data, extraWithholding: Number(e.target.value)})}/>
+        </div>
+        <div className="flex items-center gap-2">
+          <input id="multi" type="checkbox" checked={data.isMultipleJobsChecked} onChange={e=>setData({...data, isMultipleJobsChecked: e.target.checked})}/>
+          <label htmlFor="multi" className="text-sm">Multiple Jobs/Spouse Works</label>
+        </div>
+        <div>
+          <label className="block text-sm">Document Type</label>
+          <select className="w-full border p-2 rounded" value={data.documentType} onChange={e=>setData({...data, documentType: e.target.value as any})}>
+            <option>Passport</option>
+            <option>DriverLicense</option>
+            <option>StateID</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm">Document Number</label>
+          <input className="w-full border p-2 rounded" value={data.documentNumber} onChange={e=>setData({...data, documentNumber: e.target.value})}/>
+        </div>
 
-              {currentStep === 2 && (
-                <div className="space-y-4 max-w-lg">
-                   <FormField control={methods.control} name="state" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>State of Residence</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  {methods.watch('state').toUpperCase() === 'TX' && (
-                      <p className='text-sm text-muted-foreground'>Texas does not have state income tax withholding.</p>
-                  )}
-                </div>
-              )}
-
-              {currentStep === 3 && (
-                 <div className="space-y-4 max-w-lg">
-                    <FormDescription>This is a simplified representation of Form I-9 requirements.</FormDescription>
-                    <FormField control={methods.control} name="documentType" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Document Type for Verification</FormLabel>
-                            <FormControl>
-                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
-                                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="Passport" /></FormControl><FormLabel className="font-normal">U.S. Passport</FormLabel></FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="Driver's License" /></FormControl><FormLabel className="font-normal">Driver's License</FormLabel></FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="Social Security Card" /></FormControl><FormLabel className="font-normal">Social Security Card</FormLabel></FormItem>
-                                </RadioGroup>
-                            </FormControl>
-                        </FormItem>
-                    )} />
-                    <FormField control={methods.control} name="documentNumber" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Document ID Number</FormLabel>
-                            <FormControl><Input {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )} />
-                 </div>
-              )}
-
-              {currentStep === 4 && (
-                <div>
-                    <h3 className="text-lg font-semibold">Review Your Information</h3>
-                    <p className="text-sm text-muted-foreground mb-4">Please confirm all details are correct before submitting.</p>
-                    <div className="space-y-2 rounded-md border p-4 max-w-2xl bg-muted/50">
-                        <pre className='text-sm'><code>{JSON.stringify(methods.getValues(), null, 2)}</code></pre>
-                    </div>
-                </div>
-              )}
-
-              <div className="pt-8">
-                <div className="flex justify-between">
-                  <Button type="button" onClick={prev} disabled={currentStep === 0}>
-                    <ChevronLeft className="mr-2 h-4 w-4" /> Previous
-                  </Button>
-                  {currentStep === steps.length - 1 ? (
-                    <Button type="submit">
-                        <UserPlus className="mr-2 h-4 w-4" /> Onboard Employee
-                    </Button>
-                  ) : (
-                    <Button type="button" onClick={next}>
-                      Next <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </form>
-          </FormProvider>
-        </CardContent>
-      </Card>
-    </>
+        <div className="col-span-full">
+          <button disabled={saving} className="w-full bg-black text-white p-2 rounded">
+            {saving ? 'Saving...' : 'Finish Onboarding'}
+          </button>
+        </div>
+      </form>
+    </main>
   );
 }

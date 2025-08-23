@@ -1,76 +1,87 @@
-
+// src/app/(auth)/signup/page.tsx
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Logo } from '@/components/logo';
-import { useToast } from '@/hooks/use-toast';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+
+const DEV_ALLOWED = ['cravenwspatrick@gmail.com']; // dev-only allowlist
 
 export default function SignupPage() {
   const router = useRouter();
-  const { toast } = useToast();
   const [name, setName] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [inviteCode, setInviteCode] = React.useState(''); // prod: require invite
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
     if (!name || !email || !password) {
-      toast({
-        variant: 'destructive',
-        title: 'Account Creation Failed',
-        description: 'Please fill out all fields.',
-      });
+      setError('All fields are required.');
       return;
     }
-    // This is a mock authentication. In a real app, you'd call Firebase Auth here.
-    console.log('Creating account with:', { name, email, password });
-    toast({
-      title: 'Account Created',
-      description: 'Please choose how to get started.',
-    });
-    router.push('/organization-setup');
+
+    // DEV gating: only whitelisted emails can sign up
+    if (process.env.NODE_ENV !== 'production' && !DEV_ALLOWED.includes(email)) {
+      setError('Sign-ups restricted during development.');
+      return;
+    }
+
+    // PROD idea: validate inviteCode via Worker/Fn before account creation
+    // (left as client placeholder; you can enforce server-side too)
+
+    try {
+      setLoading(true);
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        name,
+        email,
+        role: null,            // set in organization-setup
+        orgId: null,          // set in organization-setup
+        onboardingComplete: false,
+        createdAt: Date.now(),
+      });
+      router.push('/organization-setup');
+    } catch (err: any) {
+      setError(err?.message || 'Signup failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Card className="w-full max-w-md shadow-lg">
-      <CardHeader className="space-y-1 text-center">
-        <div className="flex justify-center mb-4">
-          <Logo className="h-10 w-auto" />
+    <main className="max-w-md mx-auto p-6">
+      <h1 className="text-2xl font-semibold mb-4">Create your account</h1>
+      <form onSubmit={onSubmit} className="space-y-4">
+        {error && <p className="text-red-600 text-sm">{error}</p>}
+        <div>
+          <label className="block text-sm">Full name</label>
+          <input className="w-full border p-2 rounded" value={name} onChange={e=>setName(e.target.value)} />
         </div>
-        <CardTitle className="text-2xl font-bold font-headline">Create an Account</CardTitle>
-        <CardDescription>Enter your information to create an account</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
-          <Button type="submit" className="w-full bg-accent hover:bg-accent/90">
-            Create Account
-          </Button>
-        </form>
-        <div className="mt-4 text-center text-sm">
-          Already have an account?{' '}
-          <Link href="/login" className="underline">
-            Login
-          </Link>
+        <div>
+          <label className="block text-sm">Email</label>
+          <input type="email" className="w-full border p-2 rounded" value={email} onChange={e=>setEmail(e.target.value)} />
         </div>
-      </CardContent>
-    </Card>
+        <div>
+          <label className="block text-sm">Password</label>
+          <input type="password" className="w-full border p-2 rounded" value={password} onChange={e=>setPassword(e.target.value)} />
+        </div>
+        {/* Optional: invite code for production */}
+        <div>
+          <label className="block text-sm">Invitation Code (required in prod)</label>
+          <input className="w-full border p-2 rounded" value={inviteCode} onChange={e=>setInviteCode(e.target.value)} />
+        </div>
+        <button disabled={loading} className="w-full bg-black text-white p-2 rounded">
+          {loading ? 'Creating...' : 'Sign up'}
+        </button>
+      </form>
+    </main>
   );
 }

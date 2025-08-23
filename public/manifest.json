@@ -1,22 +1,13 @@
 {
-  "name": "Shyft: Workforce Operations",
+  "name": "Shyft",
   "short_name": "Shyft",
-  "description": "A compliance-first workforce operations PWA.",
-  "icons": [
-    {
-      "src": "/icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ],
-  "theme_color": "#FFFFFF",
-  "background_color": "#FFFFFF",
+  "description": "Compliance-first scheduling PWA with secure onboarding.",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait"
+  "theme_color": "#0f172a",
+  "background_color": "#ffffff",
+  "icons": [
+    { "src": "/icons/manifest-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/manifest-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
 }

@@ -1,21 +1,19 @@
-// Import the functions you need from the SDKs you need
+// src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
-// Your web app's Firebase configuration
+// TODO: replace with your actual config or env loader
 const firebaseConfig = {
-  "projectId": "shyft-xphli",
-  "appId": "1:182080370256:web:c59bb42577ff2170228355",
-  "storageBucket": "shyft-xphli.firebasestorage.app",
-  "apiKey": "AIzaSyDnVcmt5cTjPXz-_d8tSAzvBr07vIKdV20",
-  "authDomain": "shyft-xphli.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "182080370256"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 };
 
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-
-export { app, auth };
+export const auth = getAuth(app);
+export const db = getFirestore(app);
