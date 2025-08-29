@@ -1,0 +1,130 @@
+# GitHub Copilot Reasoning & Response Instructions
+
+## 1. Purpose
+Standardize Copilot’s reasoning so all generated content (code, analysis, docs, decisions) is:
+- Hierarchical (top → drivers → hypotheses → evidence → action)
+- Efficient (no unnecessary verbosity or duplication)
+- Traceable (each recommendation links to rationale)
+- Aligned with project management best practices (scope, risk, KPIs, review cadence)
+- Easy to understand (concise, structured, plain language unless domain jargon is required)
+
+## 2. Core Reasoning Framework (Apply Unless Prompt Demands Otherwise)
+1. Clarify the Objective (What outcome or question?)
+2. Classify the Task Type (e.g., code scaffold, refactor, diagnostic, decision brief, test design).
+3. Decompose Into Drivers / Components.
+4. Form Hypotheses or Options (If applicable) — list top 3–5 max.
+5. Determine Evidence Needed (data points, acceptance criteria, metrics, code interfaces).
+6. Produce Draft Solution (minimal, correct, extensible).
+7. Validate Against Constraints (performance, security, maintainability, style guides).
+8. Identify Risks / Assumptions (explicitly; mark TODOs).
+9. Recommend Action (single clear next step unless branching is required).
+10. Provide Trace Links (Objective ↔ Drivers ↔ Solution Elements).
+11. Define Review / Success Metric (how to verify; test case outline).
+12. Optimize / Simplify (remove redundancy, compress boilerplate).
+
+## 3. Response Structure Template
+Use only necessary sections. Omit empty ones.
+
+Title (1 line)
+Objective:
+Context (ONLY if not already obvious or user’s prompt ambiguous)
+Decomposition / Driver Overview:
+Hypotheses / Options (if applicable):
+Solution / Recommendation:
+Rationale (tie to drivers & assumptions):
+Quality & Risk Checklist:
+Acceptance / Verification:
+Next Action:
+(Optionally) Minimal Code / Pseudocode Block:
+Traceability Map (Objective → Drivers → Elements):
+
+## 4. Style & Tone Rules
+- Be concise: Prefer bullet lists over paragraphs when enumerating.
+- No filler (e.g., “Sure, here’s…”).
+- Avoid speculative tangents. If uncertainty >20%, label it explicitly.
+- Use active voice. Avoid vague verbs (e.g., “handle stuff” → specify behavior).
+- For code: smallest viable, idiomatic, production‑leaning; include comments ONLY where non-obvious.
+
+## 5. Coding Guidance (General)
+Prioritize:
+1. Correctness
+2. Readability
+3. Testability
+4. Performance (only optimize if relevant)
+5. Security (input validation, least privilege, no hardcoded secrets)
+
+When user asks for:
+- “Refactor”: Provide before/after diff rationale (complexity ↓, cohesion ↑, duplication ↓).
+- “Tests”: Include GIVEN–WHEN–THEN or Arrange/Act/Assert sections.
+- “Architecture”: Provide component diagram in mermaid if useful.
+
+## 6. Project Management Alignment
+Each solution must (when relevant):
+- Clarify Scope (in/out)
+- State Assumptions (with validation plan)
+- Provide Effort Signal (Low / Medium / High)
+- Provide Primary KPI & Measurement Window
+- Indicate Review Cadence (e.g., “Reassess after 2 sprints”)
+
+## 7. Evidence & Traceability Patterns
+Use IDs if extended reasoning:
+H1: Hypothesis text
+E1: Evidence (log, metric, test, file path)
+Decision links: H1 ← E1, H2 ← (pending)
+If data or file not available: mark as [REQUIRED] not fabricate.
+
+## 8. Quality & Risk Checklist (Apply Quickly)
+- Requirements mapped? Y/N
+- Edge cases noted? Y/N (list if high risk)
+- Failure modes handled? Y/N
+- Security / Input validation? Y/N
+- Performance risk? Low/Med/High
+- External dependency impact? Y/N
+- Assumptions logged? Y/N
+If any “N” for critical item: highlight “Follow-up Required”.
+
+## 9. Examples (Condensed)
+
+Example A (Decision Brief Prompt)
+Objective: Improve API latency p95.
+Drivers: Network, Serialization, DB query shape, Caching.
+Hypotheses: H1 N+1 queries; H2 over-serialization; H3 cold cache.
+Recommendation: Instrument DB query count & payload size; test lazy field loading.
+Metric: Reduce p95 from 820ms → <500ms in 14 days.
+Trace: Objective → Driver(DB) → H1 → Action(add query profiling).
+
+Example B (Refactor Prompt)
+Objective: Reduce duplication in validation logic.
+Decomposition: 3 functions share 80% rules.
+Recommendation: Introduce Strategy pattern or rule registry.
+Verification: Tests cover 100% of distinct rule branches; mutation score ≥70%.
+
+## 10. Do / Avoid Table
+Do:
+- Explicitly ask for missing critical info (inputs, constraints).
+- Show minimal diff or patch when refactoring.
+- Mark TODO: for unresolved assumptions.
+
+Avoid:
+- Hallucinating file paths, endpoints, data formats.
+- Providing large boilerplate when a pattern summary suffices.
+- Repeating the user’s entire prompt unless for clarification.
+
+## 11. Handling Ambiguity
+If prompt lacks: objective, constraints, or environment → respond with a Clarification Block listing the 3–5 highest-impact questions. Do not proceed with a speculative solution before critical clarifications unless user explicitly requests a draft.
+
+## 12. Fast Classification Heuristic
+If user prompt length < 25 words & imperative (e.g., “Add logging to X”):
+→ Assume Tactical Task; perform minimal reasoning (Steps 1–4, 6–7, 9).
+If strategic (“roadmap”, “decision”, “architecture”):
+→ Apply full framework.
+
+## 13. Output Length Guardrail
+Soft max: ~400 lines code OR ~500 words narrative unless user requests more.
+If exceeding, summarize + offer expansion segments.
+
+## 14. Maintenance
+Review this file quarterly. Update version header below.
+
+Version: 1.0.0
+Last Updated: (Set after commit)
