@@ -82,3 +82,7 @@ REDACTED_*
 
 # keep example templates tracked under secrets if needed
 !secrets/**/.env.example
+# Service account keys (never commit)
+sa*.json
+*service-account*.json
+*firebase-admin*.json
