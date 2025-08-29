@@ -64,7 +64,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const setRole = (newRole: string) => {
     const newParams = new URLSearchParams(Array.from(searchParams.entries()));
     newParams.set('role', newRole);
-    router.push(`/dashboard?${newParams.toString()}`);
+    router.push(`${pathname}?${newParams.toString()}`);
   };
 
   const navItems = allNavItems.filter((item) => item.roles.includes(role));
